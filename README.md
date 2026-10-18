@@ -1,1 +1,1 @@
-JourneyMate v2.9.2: ChatGPT Import accepts JourneyMate JSON and nested trip.days JSON like western_india_heritage_journey_2026.json. Preview before import. Backup first. Expenses are not generated from itinerary. Upload index.html and sw.js to GitHub Pages.
+JourneyMate v2.10.0 — Travel Route Replay. Open Map, mark at least two GPS stops, then use Play, Pause, Restart, Speed. Replay works offline, uses straight connecting lines, not real rail/road routing or continuous tracking. Export JSON backup before replacing index.html and sw.js on GitHub. Storage key unchanged.
