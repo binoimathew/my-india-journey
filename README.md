@@ -1,3 +1,1 @@
-JourneyMate v2.1.0 — GPS stop marking.
-
-Upload all files to the existing GitHub Pages repository, replacing index.html and sw.js. Back up existing data first. In the Map tab, name a stop (optional) and tap Mark current location; the app saves a GPS fix and current time. Stop history is stored locally and included in JSON backups. CSV/GPX export supported. Map viewing needs internet; GPS position needs permission and signal. This is manual stop marking, not background tracking.
+JourneyMate v2.2.0. GPS marking now reverse-geocodes GPS coordinates to a place name automatically using OpenStreetMap Nominatim, when online. GPS coordinates and timestamps save immediately, even if lookup fails. Users can rename saved stops manually. No continuous tracking. Backup JSON before updating. Replace index.html and sw.js in GitHub Pages. Reverse-geocoding is approximate and can return a nearby road or locality instead of a railway station.
