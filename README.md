@@ -1,3 +1,3 @@
-JourneyMate v2.0.0 — universal trip planner and expense tracker. Created by Binoy Mathew · https://www.instagram.com/binoimathew1/
+JourneyMate v2.1.0 — GPS stop marking.
 
-Keep the same GitHub Pages repository and replace index.html, sw.js and manifest.webmanifest. Export a JSON backup before updating. Existing India trip records use the same localStorage key. New trips can be created, or itineraries added manually/imported using one pipe-separated day per line. Data is stored on device, not synced. Wake alarms only while app is open.
+Upload all files to the existing GitHub Pages repository, replacing index.html and sw.js. Back up existing data first. In the Map tab, name a stop (optional) and tap Mark current location; the app saves a GPS fix and current time. Stop history is stored locally and included in JSON backups. CSV/GPX export supported. Map viewing needs internet; GPS position needs permission and signal. This is manual stop marking, not background tracking.
