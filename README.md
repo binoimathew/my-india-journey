@@ -21,3 +21,6 @@ Offline-capable itinerary, place checkboxes, wake-up time slots (alert only whil
 - Pooled expenses are divided equally by current member count; individual who-paid-whom settlement is not implemented.
 - No live GPS or server synchronization; data remains local to this browser/device. Clearing site data can erase it.
 - A static HTTPS host is necessary for remote updates; this package does not create or deploy one.
+
+
+Version 1.2.0: Expense date and time defaults to current local time on each new entry; past timestamps may be selected; future timestamps are rejected. Update the existing GitHub Pages repository by replacing index.html and sw.js and adding manifest.webmanifest if missing. Export a JSON backup before updating.
