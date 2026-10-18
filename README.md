@@ -1,1 +1,1 @@
-JourneyMate v2.9.1: JSON upload UX fix. Selecting a JSON file now immediately reads, validates and previews it or displays a visible error. Pasting JSON shows next step. Preserves existing browser data. Back up first; replace index.html and sw.js in GitHub Pages.
+JourneyMate v2.9.2: ChatGPT Import accepts JourneyMate JSON and nested trip.days JSON like western_india_heritage_journey_2026.json. Preview before import. Backup first. Expenses are not generated from itinerary. Upload index.html and sw.js to GitHub Pages.
