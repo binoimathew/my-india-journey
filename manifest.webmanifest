@@ -1,7 +1,7 @@
 {
-  "name": "My India Journey 2026",
-  "short_name": "India Journey",
-  "description": "Offline travel itinerary, places and expense tracker",
+  "name": "JourneyMate \u2014 Travel Planner & Expense Tracker",
+  "short_name": "JourneyMate",
+  "description": "Plan trips, track visits, bookings and shared travel expenses",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
