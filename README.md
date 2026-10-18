@@ -24,3 +24,6 @@ Offline-capable itinerary, place checkboxes, wake-up time slots (alert only whil
 
 
 Version 1.2.0: Expense date and time defaults to current local time on each new entry; past timestamps may be selected; future timestamps are rejected. Update the existing GitHub Pages repository by replacing index.html and sw.js and adding manifest.webmanifest if missing. Export a JSON backup before updating.
+
+## Version 1.3.0
+Manual booking register for historical and upcoming tickets/accommodation. Supports travel dates from 16 November 2026, PNR/reference, cost, time, status, editing/deleting, and optional expense ledger linkage. Back up data before updating.
