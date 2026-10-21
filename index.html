@@ -218,7 +218,37 @@ if(old){data.customBookings=data.customBookings.map(b=>b.id===id?booking:b);if(b
 else{data.customBookings.push(booking)}
 if((el('bookingType').value==='Train'||el('bookingAddExpense').checked)&&!booking.expenseId&&amount>0){const expenseId='booking-exp-'+booking.id;data.expenses.push({id:expenseId,date:booking.date,time:booking.time||'00:00',category:booking.type,amount,note:'Booking: '+booking.name,pooled:true,paidBy:'leader'});booking.expenseId=expenseId;}
 if(booking.type==='Train'&&booking.expenseId&&amount===0){data.expenses=data.expenses.filter(e=>e.id!==booking.expenseId);booking.expenseId=null;}save();resetBookingForm();alert('Booking saved.');});
-el('customBookingList').addEventListener('click',event=>{const edit=event.target.closest('[data-edit-custom]');const del=event.target.closest('[data-delete-custom]');if(edit){const b=data.customBookings.find(x=>x.id===edit.dataset.editCustom);if(!b)return;el('bookingEditId').value=b.id;el('bookingDate').value=b.date;el('bookingType').value=b.type;el('bookingName').value=b.name;el('bookingRef').value=b.ref||'';el('bookingTime').value=b.time||'';el('bookingCheckoutDate').value=b.checkoutDate||'';el('bookingCheckoutTime').value=b.checkoutTime||'';syncAccommodationFields();renderBookingSpecificFields(b.details||{});el('bookingAmount').value=b.amount||'';el('bookingStatus').value=b.status||'booked';el('bookingNote').value=b.note||'';el('bookingAddExpense').checked=!!b.expenseId;el('bookingPooled').checked=!!data.expenses.find(e=>e.id===b.expenseId)?.pooled;el('bookingSubmit').textContent='Update booking';el('bookingCancelEdit').hidden=false;el('bookingForm').scrollIntoView({behavior:'smooth'});}if(del){const b=data.customBookings.find(x=>x.id===del.dataset.deleteCustom);if(!b||!confirm('Delete this booking record? Any linked expense will remain in your ledger.'))return;data.customBookings=data.customBookings.filter(x=>x.id!==b.id);save();}});
+function openBookingEditor(bookingId){
+ const b=data.customBookings.find(x=>String(x.id)===String(bookingId));
+ if(!b){alert('This booking could not be found. Please refresh and try again.');return;}
+ // Set booking type first, then build the matching fields before populating them.
+ el('bookingType').value=b.type||'Other';
+ syncAccommodationFields();
+ renderBookingSpecificFields(b.details||{});
+ el('bookingEditId').value=b.id;
+ el('bookingDate').value=b.date||'';
+ el('bookingName').value=b.name||'';
+ el('bookingRef').value=b.ref||'';
+ el('bookingTime').value=b.time||'';
+ el('bookingCheckoutDate').value=b.checkoutDate||'';
+ el('bookingCheckoutTime').value=b.checkoutTime||'';
+ el('bookingAmount').value=b.amount??'';
+ el('bookingStatus').value=b.status||'booked';
+ el('bookingNote').value=b.note||'';
+ el('bookingAddExpense').checked=!!b.expenseId;
+ el('bookingPooled').checked=!!data.expenses.find(e=>e.id===b.expenseId)?.pooled;
+ el('bookingSubmit').textContent='Update booking';
+ el('bookingCancelEdit').hidden=false;
+ const heading=el('bookingForm').closest('.panel');
+ heading.scrollIntoView({behavior:'smooth',block:'start'});
+ el('bookingName').focus({preventScroll:true});
+}
+el('customBookingList').addEventListener('click',event=>{
+ const edit=event.target.closest('[data-edit-custom]');
+ const del=event.target.closest('[data-delete-custom]');
+ if(edit){event.preventDefault();openBookingEditor(edit.getAttribute('data-edit-custom'));return;}
+ if(del){event.preventDefault();const b=data.customBookings.find(x=>String(x.id)===String(del.getAttribute('data-delete-custom')));if(!b||!confirm('Delete this booking record? Any linked expense will remain in your ledger.'))return;data.customBookings=data.customBookings.filter(x=>x.id!==b.id);save();}
+});
 resetBookingForm();
 el('customBookingList').addEventListener('change',e=>{if(e.target.dataset.booking===undefined)return;data.bookings[Number(e.target.dataset.booking)]=e.target.value;save()});el('expenseList').addEventListener('click',e=>{let id=e.target.dataset.delete;if(!id)return;if(confirm('Delete this expense?')){data.expenses=data.expenses.filter(x=>x.id!==id);save()}});function download(name,content,type){let blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}el('exportBtn').onclick=()=>download('JourneyMate_Backup.json',JSON.stringify(data,null,2),'application/json');el('csvBtn').onclick=()=>download('JourneyMate_Expenses.csv','Date,Time,Category,Amount,Pooled,Paid By,Note\n'+data.expenses.map(e=>[e.date,e.time||'',e.category,e.amount,e.pooled?'Yes':'No',memberName(e.paidBy),e.note].map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv');el('restore').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(!Array.isArray(d.expenses)||!Array.isArray(d.visited))throw Error();if(confirm('Replace current app data with this backup?')){data={...fresh(),...d};data.gpsStops=Array.isArray(data.gpsStops)?data.gpsStops:[];loadTripPlan();data.wake=data.wake||{};data.extras=data.extras||{};data.members=Math.max(1,Math.floor(Number(data.members)||1));data.teamMembers=Array.isArray(data.teamMembers)?data.teamMembers:[];if(!data.teamMembers.length&&data.members>1)data.teamMembers=Array.from({length:data.members-1},(_,i)=>({id:'legacy-'+(i+2),name:'Member '+(i+2)+' (enter name)'}));data.contributions=Array.isArray(data.contributions)?data.contributions:[];if(data.travelMode!=='solo'&&data.travelMode!=='group')data.travelMode=(data.teamMembers.length||data.contributions.length)?'group':'solo';save()}}catch{alert('Invalid backup file.')}e.target.value=''});
 function setTripPlan(plan){data.tripPlan=plan;loadTripPlan();data.visited=[];data.wake={};data.extras={};data.bookings=initialBookings.map(x=>x[2]);save();}
