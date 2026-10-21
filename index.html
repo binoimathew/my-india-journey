@@ -190,19 +190,22 @@ const addExpense=(category,amount,note,pooled=true)=>data.expenses.push({id:Date
 el('addMeals').onclick=()=>{let entries=[...document.querySelectorAll('[data-meal]')].filter(x=>Number(x.value)>0);if(!entries.length){alert('Enter at least one amount.');return}if(!validateExpenseTimestamp())return;entries.forEach(x=>{addExpense(x.dataset.meal,Number(x.value),'',true);x.value=''});save();setFreshExpenseTimestamp()};
 el('budget').addEventListener('change',e=>{data.budget=Math.max(0,Number(e.target.value)||0);save()});el('expenseForm').addEventListener('submit',e=>{e.preventDefault();let amount=Number(el('amount').value);if(!(amount>0))return;if(!validateExpenseTimestamp())return;addExpense(el('category').value,amount,el('note').value,true);el('amount').value='';el('note').value='';save();setFreshExpenseTimestamp()});el('placeList').addEventListener('change',e=>{if(e.target.dataset.place===undefined)return;let i=Number(e.target.dataset.place);data.visited=e.target.checked?[...new Set([...data.visited,i])]:data.visited.filter(x=>x!==i);save()});const bookingFieldMap={"Train":[["trainNumber","Train number"],["origin","Starting station"],["destination","Destination station"],["arrivalDate","Journey ending date"],["arrivalTime","Arrival time"],["coach","Coach number"],["seat","Seat / berth number"],["seatStatus","Reservation confirmation"]],"Flight":[["flightNumber","Flight number"],["airline","Airline"],["origin","Departure airport / place"],["destination","Arrival airport / place"],["arrivalDate","Arrival date"],["arrivalTime","Arrival time"],["terminal","Terminal"],["seat","Seat number"],["seatStatus","Ticket confirmation"]],"Bus":[["serviceNumber","Bus / service number"],["operator","Operator"],["origin","Boarding point"],["destination","Destination"],["arrivalDate","Arrival date"],["arrivalTime","Arrival time"],["seat","Seat number"],["seatStatus","Ticket confirmation"]],"Taxi":[["operator","Taxi operator"],["vehicleNumber","Vehicle registration"],["driverPhone","Driver phone"],["origin","Pickup place"],["destination","Drop-off place"],["arrivalDate","Expected drop-off date"],["arrivalTime","Expected drop-off time"],["seatStatus","Booking confirmation"]],"Accommodation":[["hotel","Hotel / property name"],["place","Place / city"],["address","Address"],["room","Room number / type"],["seatStatus","Reservation confirmation"]],"Entry ticket":[["venue","Venue / attraction"],["place","Place"],["seatStatus","Ticket confirmation"]],"Other":[["place","Place"],["seatStatus","Booking confirmation"]]};
 function renderBookingSpecificFields(values={}){
+ const holder=el('bookingSpecificFields');
+ // Preserve the real departure-time input before rebuilding the dynamic fields.
+ const timeInput=el('bookingTime'),timeLabel=el('bookingTimeLabel');
+ const ref=el('bookingRef');
+ if(timeInput&&timeLabel){ref.after(timeLabel,timeInput);}
  const type=el('bookingType').value,fields=bookingFieldMap[type]||bookingFieldMap.Other;
- el('bookingSpecificFields').innerHTML=fields.map(([key,label])=>{
- const value=escapeHTML(String(values[key]||''));
+ holder.innerHTML=fields.map(([key,label])=>{
+ const value=escapeHTML(String(values[key]??''));
  const isDate=key==='arrivalDate',isTime=key==='arrivalTime',isStatus=key==='seatStatus';
  return '<label class="'+(['hotel','address','origin','destination'].includes(key)?'wide':'')+'">'+escapeHTML(label)+(isStatus?'<select data-booking-field="'+key+'"><option value="">Select status</option><option value="Confirmed">Confirmed</option><option value="RAC">RAC</option><option value="Waitlisted">Waitlisted</option><option value="Pending">Pending</option><option value="Cancelled">Cancelled</option></select>':'<input data-booking-field="'+key+'" type="'+(isDate?'date':isTime?'time':'text')+'" value="'+value+'">')+'</label>';
  }).join('');
- for(const field of el('bookingSpecificFields').querySelectorAll('[data-booking-field]'))if(field.tagName==='SELECT')field.value=values[field.dataset.bookingField]||'';
- const timeInput=el('bookingTime'),timeLabel=el('bookingTimeLabel');
- if(type==='Train'){
-   const origin=el('bookingSpecificFields').querySelector('[data-booking-field="origin"]');
-   if(origin){const wrap=document.createElement('div');wrap.className='booking-departure-inline';wrap.id='bookingDepartureInline';wrap.append(timeLabel,timeInput);origin.closest('label').after(wrap);timeLabel.textContent='Train departure time';}
- }else{const ref=el('bookingRef');ref.after(timeLabel,timeInput);}
-
+ for(const field of holder.querySelectorAll('[data-booking-field]'))if(field.tagName==='SELECT')field.value=values[field.dataset.bookingField]||'';
+ if(type==='Train'&&timeInput&&timeLabel){
+   const origin=holder.querySelector('[data-booking-field="origin"]');
+   if(origin){const wrap=document.createElement('div');wrap.className='booking-departure-inline wide';wrap.append(timeLabel,timeInput);origin.closest('label').after(wrap);timeLabel.textContent='Train departure time';}
+ }
 }
 function syncAccommodationFields(){el('bookingAddExpense').closest('label').hidden=el('bookingType').value==='Train';const isStay=el('bookingType').value==='Accommodation';el('accommodationTimes').hidden=!isStay;el('bookingTimeLabel').textContent=isStay?'Check-in time (required)':el('bookingType').value==='Train'?'Train departure time':'Departure / event time (optional)';el('bookingDateLabel').textContent=isStay?'Check-in date':el('bookingType').value==='Train'?'Journey starting date':'Travel / event date';el('bookingNameLabel').textContent=el('bookingType').value==='Train'?'Optional journey description':'Booking title / description';el('bookingTime').required=isStay||el('bookingType').value==='Train';el('bookingTime').required=isStay||el('bookingType').value==='Train';el('bookingCheckoutDate').required=isStay;el('bookingCheckoutTime').required=isStay;}el('bookingType').addEventListener('change',()=>{syncAccommodationFields();renderBookingSpecificFields();});function resetBookingForm(){el('bookingForm').reset();syncAccommodationFields();renderBookingSpecificFields();el('bookingEditId').value='';el('bookingSubmit').textContent='Save booking';el('bookingCancelEdit').hidden=true;el('bookingDate').value=data.tripStart||localStamp().date;}
 el('bookingCancelEdit').onclick=resetBookingForm;
@@ -240,8 +243,7 @@ function openBookingEditor(bookingId){
  el('bookingSubmit').textContent='Update booking';
  el('bookingCancelEdit').hidden=false;
  const heading=el('bookingForm').closest('.panel');
- heading.scrollIntoView({behavior:'smooth',block:'start'});
- el('bookingName').focus({preventScroll:true});
+ requestAnimationFrame(()=>{heading.scrollIntoView({behavior:'smooth',block:'start'});el('bookingDate').focus({preventScroll:true});});
 }
 el('customBookingList').addEventListener('click',event=>{
  const edit=event.target.closest('[data-edit-custom]');
