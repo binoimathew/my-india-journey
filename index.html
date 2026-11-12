@@ -1162,7 +1162,8 @@ function closeView(){if(location.hash.startsWith('#view='))history.replaceState(
 $('cloudViewerCloseTop').onclick=closeView;
 function localProject(){const id=localStorage.getItem('journeymate-active-project-v1');if(!id)throw Error('No active local project');const d=JSON.parse(localStorage.getItem('journeymate-project-'+id)||'null');if(!d)throw Error('Local project not found');return {id,d};}
 function updateLocalLabel(){try{const {id,d}=localProject();$('cloudProjectLabel').textContent=(d.tripName||'Unnamed journey')+' ('+id+')'}catch(e){$('cloudProjectLabel').textContent=e.message}}
-async function handle(action){try{status('Working…');await action();}catch(e){status('Unable to complete: '+e.message);console.error('JourneyMate cloud',e)}}
+async function handle(action){try{status('Working…');await action();}catch(e){status('Cloud operation failed ('+(e.code||'unknown')+'): '+(e.message||String(e)));console.error('JourneyMate cloud',e)}}
+function cloudWait(p,label,ms=18000){return Promise.race([p,new Promise((_,reject)=>setTimeout(()=>reject(Error(label+' timed out after '+Math.round(ms/1000)+' seconds. Check connectivity or Firestore access.')),ms))]);}
 $('cloudSignIn').onclick=()=>handle(async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(e.code))await signInWithRedirect(auth,new GoogleAuthProvider());else throw e}});
 $('cloudSignOut').onclick=()=>handle(async()=>{closeView();await signOut(auth);status('Signed out')});
 $('cloudCopyUid').onclick=()=>handle(async()=>{await navigator.clipboard.writeText(user.uid);status('Member ID copied. Share it only with the journey owner.')});
@@ -1183,12 +1184,19 @@ $('cloudPublish').onclick=()=>handle(async()=>{
  const isUpdate=existing.exists();
  const permissions=currentPermissions();
  if(!confirm((isUpdate?'Update':'Publish')+' '+(d.tripName||'this journey')+' with the selected view-only permissions?')){status('Cancelled');return}
+ status('Preparing selected view-only information…');
  const snapshot=publicSnapshot(d,permissions);
  const sid=existing.exists()&&existing.data().shareId||token();
  const payload={name:d.tripName||'Unnamed journey',ownerUid:user.uid,memberUids:existing.exists()?(existing.data().memberUids||[]):[],shareId:sid,permissions,snapshot,updatedAt:serverTimestamp()};
- await setDoc(ref,payload);
- await setDoc(doc(db,'publicShares',sid),{ownerUid:user.uid,journeyId:id,name:payload.name,permissions,snapshot,updatedAt:serverTimestamp()});
- status(isUpdate?'Journey updated. View-only link refreshed.':'Journey published. View-only link created.');await refresh();await syncPublishButton();
+ status('Saving journey to Firebase…');
+ await cloudWait(setDoc(ref,payload),'Journey save');
+ status('Saving view-only sharing record…');
+ await cloudWait(setDoc(doc(db,'publicShares',sid),{ownerUid:user.uid,journeyId:id,name:payload.name,permissions,snapshot,updatedAt:serverTimestamp()}),'Public share save');
+ status('Verifying public sharing record…');
+ const verify=await cloudWait(getDoc(doc(db,'publicShares',sid)),'Share verification');
+ if(!verify.exists())throw Error('Public sharing record is missing after save.');
+ status('Cloud save verified. Testing viewer access still requires opening the shared link in a signed-out browser.');
+ try{await refresh();await syncPublishButton()}catch(e){console.warn('Refresh after publish',e);status('Cloud save verified, but list refresh failed: '+e.message)}
 });
 $('cloudCopyLink').onclick=()=>handle(async()=>{
  const {id}=localProject(),snap=await getDoc(doc(db,'journeys',id));
@@ -1258,7 +1266,7 @@ function openShareLink(sid){
  shareUnsub=onSnapshot(doc(db,'publicShares',sid),snap=>{
   if(!snap.exists()){$('cloudViewerTitle').textContent='Link unavailable';$('cloudViewerContent').textContent='This link has been revoked or is invalid.';return}
   renderShared(snap.data());
- },e=>{$('cloudViewerTitle').textContent='Unable to open journey';$('cloudViewerContent').textContent='This shared journey could not be loaded. Check your internet connection or link permissions.';console.error('Shared journey load failed',e)});
+ },e=>{$('cloudViewerTitle').textContent='Unable to open journey';$('cloudViewerContent').textContent='Unable to retrieve the public sharing record. Firebase error: '+(e.code||'unknown')+' — '+(e.message||String(e))+'. If this says permission-denied, the Firestore rules must allow reading active publicShares documents without signing in.';console.error('Shared journey load failed',e)});
 }
 function checkShareLink(){
  const hash=location.hash.match(/^#view=([a-f0-9]{48})$/i);
